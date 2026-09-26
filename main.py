@@ -74,11 +74,11 @@ def main():
         "bolsas": todas_bolsas
     }
 
-    # Garante que o diretório de destino existe (ex: pasta public do React ou data do Express)
-    os.makedirs("data", exist_ok=True)
-    caminho_arquivo = "data/scholarshipsDatabase.json"
+    # Garante que o diretório 'public' do React existe
+    os.makedirs("public", exist_ok=True)
+    caminho_arquivo = "public/scholarshipsDatabase.json"
 
-    # Salva os dados processados num ficheiro JSON
+    # Salva os dados processados no ficheiro JSON estático
     with open(caminho_arquivo, "w", encoding="utf-8") as f:
         json.dump(banco_de_dados, f, ensure_ascii=False, indent=4)
     
