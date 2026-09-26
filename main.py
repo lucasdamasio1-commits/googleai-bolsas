@@ -1,11 +1,11 @@
-import json
 import os
 from datetime import datetime
 from playwright.sync_api import sync_playwright
+from supabase import create_client, Client
 
 def scrape_fapesp(page):
-    """Módulo de coleta para oportunidades da FAPESP."""
-    print("A iniciar coleta na FAPESP...")
+    """Módulo de recolha para oportunidades da FAPESP."""
+    print("A iniciar recolha na FAPESP...")
     bolsas = []
     try:
         # Exemplo de navegação. Os seletores exatos dependem da estrutura atual do site.
@@ -19,7 +19,7 @@ def scrape_fapesp(page):
             prazo = el.locator(".prazo").inner_text()
             
             bolsas.append({
-                "id": f"fapesp-{len(bolsas)}",
+                # O campo "id" não é enviado, pois o Supabase irá criá-lo automaticamente (int8)
                 "instituicao": "FAPESP",
                 "titulo": titulo,
                 "area": "Multidisciplinar", # Pode ser extraído dinamicamente
@@ -29,21 +29,21 @@ def scrape_fapesp(page):
                 "status": "Ativa"
             })
     except Exception as e:
-        print(f"Erro ao raspar FAPESP: {e}")
+        print(f"Erro ao extrair FAPESP: {e}")
     
     return bolsas
 
 def scrape_daad(page):
-    """Módulo de coleta para bolsas do DAAD."""
-    print("A iniciar coleta no DAAD...")
+    """Módulo de recolha para bolsas do DAAD."""
+    print("A iniciar recolha no DAAD...")
     bolsas = []
     # Implementar lógica de navegação e extração específica do DAAD aqui
     # ...
     return bolsas
 
 def scrape_euraxess(page):
-    """Módulo de coleta para oportunidades no EURAXESS."""
-    print("A iniciar coleta no EURAXESS...")
+    """Módulo de recolha para oportunidades no EURAXESS."""
+    print("A iniciar recolha no EURAXESS...")
     bolsas = []
     # Implementar lógica de navegação e extração específica do EURAXESS aqui
     # ...
@@ -67,22 +67,35 @@ def main():
 
         browser.close()
 
-    # Adiciona metadados de atualização
-    banco_de_dados = {
-        "ultima_atualizacao": datetime.now().isoformat(),
-        "total_bolsas": len(todas_bolsas),
-        "bolsas": todas_bolsas
-    }
-
-    # Garante que o diretório 'public' do React existe
-    os.makedirs("public", exist_ok=True)
-    caminho_arquivo = "public/scholarshipsDatabase.json"
-
-    # Salva os dados processados no ficheiro JSON estático
-    with open(caminho_arquivo, "w", encoding="utf-8") as f:
-        json.dump(banco_de_dados, f, ensure_ascii=False, indent=4)
+    print("A iniciar ligação ao Supabase...")
     
-    print(f"Sucesso! {len(todas_bolsas)} bolsas foram extraídas e salvas em {caminho_arquivo}.")
+    # Obtém as credenciais guardadas de forma segura no GitHub Secrets
+    url = os.environ.get("SUPABASE_URL")
+    key = os.environ.get("SUPABASE_KEY")
+    
+    if not url or not key:
+        print("Erro crítico: As credenciais do Supabase (SUPABASE_URL e SUPABASE_KEY) não foram encontradas.")
+        return
+
+    try:
+        # Inicia a ligação à base de dados
+        supabase: Client = create_client(url, key)
+
+        # Limpa a tabela antiga para evitar duplicados ou manter editais expirados da semana passada
+        # O filtro .neq("id", "0") é um método para atingir e apagar todas as linhas existentes
+        print("A limpar registos antigos da tabela...")
+        supabase.table("bolsas").delete().neq("id", "0").execute() 
+
+        # Insere as novas bolsas recolhidas na nuvem
+        if todas_bolsas:
+            print(f"A inserir {len(todas_bolsas)} bolsas no Supabase...")
+            supabase.table("bolsas").insert(todas_bolsas).execute()
+            print("Sucesso! A base de dados do Cadê Bolsa foi atualizada com as oportunidades mais recentes.")
+        else:
+            print("Aviso: Nenhuma bolsa foi encontrada nesta varredura.")
+
+    except Exception as e:
+        print(f"Erro na operação com o Supabase: {e}")
 
 if __name__ == "__main__":
     main()
