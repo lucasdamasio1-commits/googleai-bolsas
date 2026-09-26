@@ -11,7 +11,6 @@ import { EmailSubscriptionPanel } from './components/EmailSubscriptionPanel';
 import { SyncDailyModal } from './components/SyncDailyModal';
 
 // --- CONFIGURAÇÃO DO SUPABASE ---
-// Cole aqui os seus dados (copiados do painel do Supabase > Project Settings > API)
 const SUPABASE_URL = 'COLE_AQUI_A_SUA_URL_DO_SUPABASE'; 
 const SUPABASE_ANON_KEY = 'COLE_AQUI_A_SUA_PUBLISHABLE_KEY_(sb_publishable_...)';
 
@@ -39,8 +38,6 @@ export default function App() {
   const [totalVerifiedOnPage, setTotalVerifiedOnPage] = useState(0);
   const [totalDisqualifiedEliminated, setTotalDisqualifiedEliminated] = useState(0);
   const [totalExpiredEliminated, setTotalExpiredEliminated] = useState(0);
-  
-  // O estado da data de sincronização (Agora utilizado corretamente)
   const [lastSyncDate, setLastSyncDate] = useState(new Date().toISOString());
   const [loading, setLoading] = useState(false);
 
@@ -90,7 +87,6 @@ export default function App() {
       const bolsasFinais: Scholarship[] = [];
 
       resultadosFiltrados.forEach((b: any) => {
-        // Mapeia os campos em português do Supabase para os campos em inglês que o TypeScript espera
         const mappedScholarship = {
           ...b,
           title: b.titulo || b.title || 'Sem título',
@@ -117,8 +113,6 @@ export default function App() {
       setTotalVerifiedOnPage(bolsasFinais.length);
       setTotalDisqualifiedEliminated(0);
       setTotalExpiredEliminated(expiradasCount);
-      
-      // Correção do Erro 2: Utilizamos o setLastSyncDate para guardar a hora em que os dados foram carregados
       setLastSyncDate(new Date().toISOString());
 
     } catch (err) {
@@ -259,7 +253,6 @@ export default function App() {
             ) : (
               <div className="space-y-3.5">
                 {scholarships.map((scholarship, index) => (
-                  {/* Correção do Erro 1: Utilizamos o index como chave reserva caso o id falhe, eliminando a dependência do .titulo */}
                   <ScholarshipCard key={(scholarship as any).id || index} scholarship={scholarship} />
                 ))}
               </div>
