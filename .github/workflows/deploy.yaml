@@ -1,0 +1,42 @@
+name: Deploy site Vite para GitHub Pages
+on:
+  push:
+    branches: ["main"] # Altere para 'master' se for o nome da sua branch principal
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obter o código
+        uses: actions/checkout@v4
+      
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          
+      - name: Instalar dependências
+        run: npm install
+        
+      - name: Compilar o projeto (Build)
+        run: npm run build
+        
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v4
+        
+      - name: Fazer upload dos ficheiros compilados
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist' # O Vite guarda os ficheiros compilados nesta pasta
+          
+      - name: Publicar no GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
