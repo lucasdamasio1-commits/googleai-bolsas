@@ -1,4 +1,4 @@
-import os
+iimport os
 from datetime import datetime
 from playwright.sync_api import sync_playwright
 from supabase import create_client, Client
@@ -8,26 +8,37 @@ def scrape_fapesp(page):
     print("A iniciar recolha na FAPESP...")
     bolsas = []
     try:
-        # Exemplo de navegação. Os seletores exatos dependem da estrutura atual do site.
         page.goto("https://fapesp.br/oportunidades", timeout=60000)
-        page.wait_for_selector(".oportunidade-item", timeout=10000)
+        # Aguarda que o conteúdo básico da página carregue de forma resiliente
+        page.wait_for_load_state("domcontentloaded", timeout=15000)
         
-        elementos = page.locator(".oportunidade-item").all()
+        # Analisa os links presentes na página para extrair chamadas e editais
+        elementos = page.locator("a").all()
         for el in elementos:
-            titulo = el.locator(".titulo").inner_text()
-            link = el.locator("a").get_attribute("href")
-            prazo = el.locator(".prazo").inner_text()
-            
-            bolsas.append({
-                # O campo "id" não é enviado, pois o Supabase irá criá-lo automaticamente (int8)
-                "instituicao": "FAPESP",
-                "titulo": titulo,
-                "area": "Multidisciplinar", # Pode ser extraído dinamicamente
-                "modalidade": "Pesquisa",
-                "prazo": prazo,
-                "link": f"https://fapesp.br{link}" if link.startswith("/") else link,
-                "status": "Ativa"
-            })
+            try:
+                titulo = el.inner_text().strip()
+                link = el.get_attribute("href")
+                
+                if titulo and link and len(titulo) > 20:
+                    # Filtra links relevantes com base em palavras-chave institucionais
+                    if any(termo in link.lower() or termo in titulo.lower() for termo in ['oportunidade', 'bolsa', 'chamada', 'edital', 'fomento']):
+                        link_completo = f"https://fapesp.br{link}" if link.startswith("/") else link
+                        
+                        # Evita duplicados na lista
+                        if not any(b['link'] == link_completo for b in bolsas):
+                            bolsas.append({
+                                "instituicao": "FAPESP",
+                                "titulo": titulo,
+                                "area": "Pesquisa & Fomento",
+                                "modalidade": "Pesquisa",
+                                "prazo": "Consulte o portal oficial",
+                                "link": link_completo,
+                                "status": "Ativa"
+                            })
+            except Exception:
+                continue
+                
+        print(f"FAPESP: {len(bolsas)} oportunidades detetadas.")
     except Exception as e:
         print(f"Erro ao extrair FAPESP: {e}")
     
@@ -81,8 +92,7 @@ def main():
         # Inicia a ligação à base de dados
         supabase: Client = create_client(url, key)
 
-        # Limpa a tabela antiga para evitar duplicados ou manter editais expirados da semana passada
-        # O filtro .neq("id", "0") é um método para atingir e apagar todas as linhas existentes
+        # Limpa a tabela antiga para evitar duplicados ou manter editais expirados
         print("A limpar registos antigos da tabela...")
         supabase.table("bolsas").delete().neq("id", "0").execute() 
 
