@@ -1,0 +1,11 @@
+services:
+  cade-bolsa:
+    build: .
+    container_name: cade_bolsa_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - GEMINI_API_KEY=${GEMINI_API_KEY}

@@ -1,0 +1,6 @@
+{
+  "name": "Buscador de Bolsas",
+  "description": "Portal inteligente de busca e agregação de oportunidades de bolsas de pesquisa nacionais e internacionais (FAPESP, DAAD, Fulbright, EURAXESS, Horizon e Universidades).",
+  "permissions": [],
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
