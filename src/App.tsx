@@ -8,7 +8,8 @@ import {
   Globe
 } from 'lucide-react';
 import { Scholarship } from './types';
-import { fetchScholarships } from './lib/search';
+// A importação do 'fetchScholarships' foi removida, pois a requisição agora lê o JSON estático e filtra localmente
+// import { fetchScholarships } from './lib/search'; 
 import { Navbar } from './components/Navbar';
 import { FilterBar } from './components/FilterBar';
 import { ScholarshipCard } from './components/ScholarshipCard';
@@ -45,34 +46,85 @@ export default function App() {
   // Sync Modal State
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
-  // Load scholarships with active filters
+  // Load scholarships (Atualizado para consumir o JSON estático e filtrar no lado do cliente)
   const loadScholarships = async () => {
     setLoading(true);
     try {
-      const data = await fetchScholarships({
-        query: searchQuery,
-        country: selectedCountry,
-        theme: selectedTheme,
-        modality: selectedModality,
-        careerLevel: selectedCareerLevel,
-        linkClassification: selectedLinkClassification,
-        verificationStatus: selectedVerificationStatus,
-        sortBy: selectedSortBy,
-        includeExpired,
+      // 1. Consome o arquivo JSON diretamente da raiz do site
+      const response = await fetch('/scholarshipsDatabase.json');
+      
+      if (!response.ok) {
+        throw new Error('Arquivo estático não encontrado.');
+      }
+
+      const data = await response.json();
+      let resultadosFiltrados = data.bolsas || [];
+
+      // 2. Filtros Locais (Substituindo o trabalho do antigo servidor backend)
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        resultadosFiltrados = resultadosFiltrados.filter((b: any) =>
+          (b.titulo && b.titulo.toLowerCase().includes(query)) ||
+          (b.instituicao && b.instituicao.toLowerCase().includes(query)) ||
+          (b.area && b.area.toLowerCase().includes(query))
+        );
+      }
+
+      if (selectedTheme !== 'all') {
+        resultadosFiltrados = resultadosFiltrados.filter((b: any) => 
+          b.area?.toLowerCase() === selectedTheme.toLowerCase() || 
+          b.theme?.toLowerCase() === selectedTheme.toLowerCase()
+        );
+      }
+
+      if (selectedCountry !== 'all') {
+        resultadosFiltrados = resultadosFiltrados.filter((b: any) => 
+          b.pais?.toLowerCase() === selectedCountry.toLowerCase() || 
+          b.country?.toLowerCase() === selectedCountry.toLowerCase()
+        );
+      }
+
+      if (selectedModality !== 'all') {
+        resultadosFiltrados = resultadosFiltrados.filter((b: any) => 
+          b.modalidade?.toLowerCase() === selectedModality.toLowerCase() || 
+          b.modality?.toLowerCase() === selectedModality.toLowerCase()
+        );
+      }
+
+      // 3. Processamento de status de expiração
+      let expiradasCount = 0;
+      const bolsasFinais: Scholarship[] = [];
+
+      resultadosFiltrados.forEach((b: any) => {
+        const isExpired = b.status?.toLowerCase() === 'encerrada' || b.status?.toLowerCase() === 'expirada';
+        
+        if (isExpired) {
+          expiradasCount++;
+          if (includeExpired) {
+            bolsasFinais.push(b as Scholarship);
+          }
+        } else {
+          bolsasFinais.push(b as Scholarship);
+        }
       });
 
-      setScholarships(data.scholarships);
-      setTotalActive(data.totalActive);
-      setTotalDirectLinks(data.totalDirectLinks ?? 0);
-      setTotalWebFindings(data.totalWebFindings ?? 0);
-      setTotalVerifiedOnPage(data.totalVerifiedOnPage ?? 0);
-      setTotalDisqualifiedEliminated(data.totalDisqualifiedEliminated ?? 0);
-      setTotalExpiredEliminated(data.totalExpiredEliminated);
-      if (data.lastDailySyncDate) {
-        setLastSyncDate(data.lastDailySyncDate);
+      // 4. Atualização dos estados da interface
+      setScholarships(bolsasFinais);
+      setTotalActive(bolsasFinais.length);
+      setTotalDirectLinks(bolsasFinais.length); 
+      setTotalWebFindings(0);
+      setTotalVerifiedOnPage(bolsasFinais.length);
+      setTotalDisqualifiedEliminated(0);
+      setTotalExpiredEliminated(expiradasCount);
+      
+      if (data.ultima_atualizacao) {
+        setLastSyncDate(data.ultima_atualizacao);
       }
+
     } catch (err) {
-      console.error('Erro ao carregar bolsas:', err);
+      console.error('Erro ao carregar o JSON estático de bolsas:', err);
+      // Evita travar a interface se o crawler ainda não gerou o JSON
+      setScholarships([]); 
     } finally {
       setLoading(false);
     }
@@ -325,6 +377,9 @@ export default function App() {
           </div>
         </div>
       </footer>
+    </div>
+  );
+}
     </div>
   );
 }
