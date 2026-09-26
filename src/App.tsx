@@ -11,8 +11,8 @@ import { EmailSubscriptionPanel } from './components/EmailSubscriptionPanel';
 import { SyncDailyModal } from './components/SyncDailyModal';
 
 // --- CONFIGURAÇÃO DO SUPABASE ---
-const SUPABASE_URL = 'COLE_AQUI_A_SUA_URL_DO_SUPABASE'; 
-const SUPABASE_ANON_KEY = 'COLE_AQUI_A_SUA_PUBLISHABLE_KEY_(sb_publishable_...)';
+const SUPABASE_URL = 'https://supabase.com/dashboard/project/xstenjzdfxniiibyyabe/editor/17597'; 
+const SUPABASE_ANON_KEY = 'sb_publishable_es14OmQuIQyceFIEY3CKhQ_tZ4hSJkS';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
