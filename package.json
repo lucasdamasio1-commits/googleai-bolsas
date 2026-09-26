@@ -1,17 +1,18 @@
 {
   "name": "meu-buscador-de-bolsas",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx server.ts",
+    "dev": "vite",
     "build": "tsc && vite build",
-    "start": "tsx server.ts",
-    "lint": "tsc --noEmit",
-    "preview": "vite preview --host 0.0.0.0 --port 3000"
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.128.0",
     "@google/genai": "^2.24.0",
+    "@supabase/supabase-js": "^2.45.0",
     "clsx": "^2.1.1",
     "express": "^5.2.1",
     "lucide-react": "^1.16.0",
