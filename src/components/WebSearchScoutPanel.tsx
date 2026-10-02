@@ -27,6 +27,7 @@ interface WebSearchScoutPanelProps {
 
 export const WebSearchScoutPanel: React.FC<WebSearchScoutPanelProps> = ({ onImportSuccess }) => {
   const [portalId, setPortalId] = useState<string>('all');
+  const [customUrl, setCustomUrl] = useState<string>('');
   const [region, setRegion] = useState<'Brasil' | 'Europa' | 'EUA' | 'Mundo' | 'Todas'>('Todas');
   const [careerLevel, setCareerLevel] = useState<'Iniciação Científica' | 'Mestrado' | 'Doutorado' | 'Pós-Doutorado' | 'Treinamento Técnico' | 'Projetos de Pesquisa' | 'Extensão' | 'Todas'>('Todas');
   const [theme, setTheme] = useState<'Administração' | 'Marketing' | 'Comunicação' | 'Todas'>('Todas');
@@ -55,6 +56,7 @@ export const WebSearchScoutPanel: React.FC<WebSearchScoutPanelProps> = ({ onImpo
     try {
       const data = await searchWebScout({
         portalId,
+        customUrl: portalId === 'custom' ? customUrl.trim() : undefined,
         region,
         careerLevel,
         theme,
@@ -183,13 +185,37 @@ export const WebSearchScoutPanel: React.FC<WebSearchScoutPanelProps> = ({ onImpo
                 onChange={(e) => setPortalId(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-300 rounded-md py-1.5 px-2.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:bg-white"
               >
-                <option value="all">Todos os Portais Oficiais (FAPESP, Fulbright, Chevening, Eiffel)</option>
-                <option value="fapesp">FAPESP Oportunidades (fapesp.br/oportunidades/)</option>
-                <option value="fulbright">Comissão Fulbright Brasil (fulbright.org.br)</option>
-                <option value="chevening">Chevening Scholarships UK (chevening.org)</option>
-                <option value="france">France Excellence Eiffel (campusfrance.org)</option>
+                <option value="all">Todos os Portais Oficiais (Brasil, Europa, EUA & Cooperação Internacional)</option>
+                <option value="fapesp">FAPESP Oportunidades (fapesp.br/oportunidades/) — [95+ Editais Ao Vivo]</option>
+                <option value="confap_international">CONFAP Internacional & Transnacionais (Europa / Horizon Europe)</option>
+                <option value="humboldt">Fundação Alexander von Humboldt (Alemanha / Europa) — [Refinamento 1 Clique]</option>
+                <option value="fulbright">Comissão Fulbright Brasil (Estados Unidos / EUA)</option>
+                <option value="france_eiffel">Campus France / Bolsa Eiffel (França / Europa)</option>
+                <option value="carolina">Fundación Carolina (Espanha / Europa & América Latina)</option>
+                <option value="chevening">Chevening Scholarships UK (Reino Unido / Europa)</option>
+                <option value="custom">URL Direta de Portal Governamental / Institucional Customizado</option>
               </select>
             </div>
+
+            {/* Custom URL Input if selected */}
+            {portalId === 'custom' && (
+              <div className="bg-slate-50 border border-slate-300 rounded-md p-2.5 space-y-1">
+                <label className="block text-[11px] font-bold text-slate-700">
+                  URL Direta do Portal de Editais
+                </label>
+                <input
+                  type="url"
+                  value={customUrl}
+                  onChange={(e) => setCustomUrl(e.target.value)}
+                  placeholder="https://fapesp.br/oportunidades/ ou https://confap.org.br/news/category/chamadas/"
+                  className="w-full bg-white border border-slate-300 rounded py-1.5 px-2 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-800"
+                  required
+                />
+                <p className="text-[10px] text-slate-500 leading-tight">
+                  O robô acessará essa página, localizará links e botões de editais, navegará até a página final e conferirá o status HTTP 200 e links para submissão/edital.
+                </p>
+              </div>
+            )}
 
             {/* 2. Theme */}
             <div>
@@ -240,9 +266,10 @@ export const WebSearchScoutPanel: React.FC<WebSearchScoutPanelProps> = ({ onImpo
                 className="w-full bg-slate-50 border border-slate-300 rounded-md py-1.5 px-2.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-800 focus:bg-white"
               >
                 <option value="Todas">Todas as Regiões (Brasil, Europa, EUA, Mundo)</option>
-                <option value="Brasil">Brasil (FAPESP, CNPq, CAPES)</option>
-                <option value="Europa">Europa (DAAD, FCT, Chevening)</option>
-                <option value="EUA">EUA (Fulbright)</option>
+                <option value="Brasil">Brasil (FAPESP, CONFAP Nacional)</option>
+                <option value="Europa">Europa (Alemanha/Humboldt, França/Eiffel, Espanha/Carolina, Reino Unido/Chevening, Horizon Europe)</option>
+                <option value="EUA">Estados Unidos / EUA (Fulbright Brasil)</option>
+                <option value="Mundo">Mundo (Cooperação Transnacional e Internacional)</option>
               </select>
             </div>
 

@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Bot, Bell, RefreshCw, Info, CheckCircle2, Globe } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
+import {
+  Bot,
+  Bell,
+  RefreshCw,
+  Info,
+  CheckCircle2,
+  Globe
+} from 'lucide-react';
 import { Scholarship } from './types';
+import { fetchScholarships } from './lib/search';
 import { Navbar } from './components/Navbar';
 import { FilterBar } from './components/FilterBar';
 import { ScholarshipCard } from './components/ScholarshipCard';
@@ -9,12 +16,6 @@ import { AIScoutPanel } from './components/AIScoutPanel';
 import { WebSearchScoutPanel } from './components/WebSearchScoutPanel';
 import { EmailSubscriptionPanel } from './components/EmailSubscriptionPanel';
 import { SyncDailyModal } from './components/SyncDailyModal';
-
-// --- CONFIGURAÇÃO DO SUPABASE ---
-const SUPABASE_URL = 'https://xstenjzdfxniiibyyabe.supabase.co'; 
-const SUPABASE_ANON_KEY = 'sb_publishable_es14OmQuIQyceFIEY3CKhQ_tZ4hSJkS';
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'catalog' | 'ai-scout' | 'web-search' | 'subscribe'>('catalog');
@@ -41,83 +42,37 @@ export default function App() {
   const [lastSyncDate, setLastSyncDate] = useState(new Date().toISOString());
   const [loading, setLoading] = useState(false);
 
+  // Sync Modal State
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
-  // Consulta ao Supabase
+  // Load scholarships with active filters
   const loadScholarships = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from('bolsas').select('*');
-      
-      if (error) {
-        throw error;
-      }
-
-      let resultadosFiltrados = data || [];
-
-      // Filtros Locais
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        resultadosFiltrados = resultadosFiltrados.filter((b: any) =>
-          (b.titulo && b.titulo.toLowerCase().includes(query)) ||
-          (b.instituicao && b.instituicao.toLowerCase().includes(query)) ||
-          (b.area && b.area.toLowerCase().includes(query))
-        );
-      }
-
-      if (selectedTheme !== 'all') {
-        resultadosFiltrados = resultadosFiltrados.filter((b: any) => 
-          b.area?.toLowerCase() === selectedTheme.toLowerCase()
-        );
-      }
-
-      if (selectedCountry !== 'all') {
-        resultadosFiltrados = resultadosFiltrados.filter((b: any) => 
-          b.pais?.toLowerCase() === selectedCountry.toLowerCase()
-        );
-      }
-
-      if (selectedModality !== 'all') {
-        resultadosFiltrados = resultadosFiltrados.filter((b: any) => 
-          b.modalidade?.toLowerCase() === selectedModality.toLowerCase()
-        );
-      }
-
-      let expiradasCount = 0;
-      const bolsasFinais: Scholarship[] = [];
-
-      resultadosFiltrados.forEach((b: any) => {
-        const mappedScholarship = {
-          ...b,
-          title: b.titulo || b.title || 'Sem título',
-          institution: b.instituicao || b.institution || '',
-          theme: b.area || b.theme || '',
-          modality: b.modalidade || b.modality || '',
-          deadline: b.prazo || b.deadline || '',
-        };
-
-        const isExpired = b.status?.toLowerCase() === 'encerrada' || b.status?.toLowerCase() === 'expirada';
-        
-        if (isExpired) {
-          expiradasCount++;
-          if (includeExpired) bolsasFinais.push(mappedScholarship as Scholarship);
-        } else {
-          bolsasFinais.push(mappedScholarship as Scholarship);
-        }
+      const data = await fetchScholarships({
+        query: searchQuery,
+        country: selectedCountry,
+        theme: selectedTheme,
+        modality: selectedModality,
+        careerLevel: selectedCareerLevel,
+        linkClassification: selectedLinkClassification,
+        verificationStatus: selectedVerificationStatus,
+        sortBy: selectedSortBy,
+        includeExpired,
       });
 
-      setScholarships(bolsasFinais);
-      setTotalActive(bolsasFinais.length);
-      setTotalDirectLinks(bolsasFinais.length); 
-      setTotalWebFindings(0);
-      setTotalVerifiedOnPage(bolsasFinais.length);
-      setTotalDisqualifiedEliminated(0);
-      setTotalExpiredEliminated(expiradasCount);
-      setLastSyncDate(new Date().toISOString());
-
+      setScholarships(data.scholarships);
+      setTotalActive(data.totalActive);
+      setTotalDirectLinks(data.totalDirectLinks ?? 0);
+      setTotalWebFindings(data.totalWebFindings ?? 0);
+      setTotalVerifiedOnPage(data.totalVerifiedOnPage ?? 0);
+      setTotalDisqualifiedEliminated(data.totalDisqualifiedEliminated ?? 0);
+      setTotalExpiredEliminated(data.totalExpiredEliminated);
+      if (data.lastDailySyncDate) {
+        setLastSyncDate(data.lastDailySyncDate);
+      }
     } catch (err) {
-      console.error('Erro ao carregar do Supabase:', err);
-      setScholarships([]); 
+      console.error('Erro ao carregar bolsas:', err);
     } finally {
       setLoading(false);
     }
@@ -139,6 +94,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] text-[#1E293B] flex flex-col font-sans">
+      {/* Top Navbar */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -149,9 +105,12 @@ export default function App() {
         lastSyncDate={lastSyncDate}
       />
 
+      {/* Main Content Viewport */}
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        {/* TAB 1: CATALOG OF SCHOLARSHIPS */}
         {activeTab === 'catalog' && (
           <div className="space-y-6">
+            {/* Academic Marquee Hero Header (Sober Institutional Design) */}
             <div className="bg-[#0F172A] border border-slate-800 rounded-2xl p-6 sm:p-8 text-white shadow-sm">
               <div className="max-w-4xl space-y-3">
                 <div className="flex items-center space-x-2 text-[11px] font-mono tracking-wider text-amber-300 uppercase">
@@ -161,12 +120,15 @@ export default function App() {
                   <span>·</span>
                   <span>Fomento Acadêmico Vigente</span>
                 </div>
+
                 <h2 className="font-serif text-2xl sm:text-3.5xl font-bold tracking-tight text-white leading-tight">
                   Consulta de Bolsas de Pesquisa, Pós-Graduação e Projetos de Extensão
                 </h2>
+
                 <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans max-w-3xl">
                   Plataforma acadêmica dedicada ao mapeamento diário de oportunidades no Brasil, Europa e demais países. Prioridade editorial para chamadas e editais nas áreas de <strong>Administração</strong>, <strong>Marketing</strong> e <strong>Comunicação</strong>. Editais com inscrições encerradas são estritamente excluídos do catálogo.
                 </p>
+
                 <div className="pt-3 flex flex-wrap items-center gap-3">
                   <button
                     onClick={() => setActiveTab('web-search')}
@@ -175,6 +137,7 @@ export default function App() {
                     <Globe className="w-3.5 h-3.5 text-emerald-100" />
                     <span>Navegador Institucional (Cliques & Links Reais)</span>
                   </button>
+
                   <button
                     onClick={() => setActiveTab('ai-scout')}
                     className="px-4 py-2 bg-white hover:bg-slate-100 text-[#0F172A] font-semibold text-xs rounded-md transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs"
@@ -182,6 +145,7 @@ export default function App() {
                     <Bot className="w-3.5 h-3.5 text-slate-800" />
                     <span>Consultar Agente de IA para Seleção</span>
                   </button>
+
                   <button
                     onClick={() => setActiveTab('subscribe')}
                     className="px-4 py-2 bg-slate-800/80 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs rounded-md transition-colors flex items-center space-x-1.5 cursor-pointer"
@@ -193,6 +157,7 @@ export default function App() {
               </div>
             </div>
 
+            {/* Filter Bar with Priority Themes and Country / Modality filters */}
             <FilterBar
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
@@ -219,6 +184,7 @@ export default function App() {
               totalDisqualifiedEliminated={totalDisqualifiedEliminated}
             />
 
+            {/* Catalog Metadata & Statistics Strip */}
             <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 px-1 font-sans">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-bold text-slate-800">
@@ -227,7 +193,39 @@ export default function App() {
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300">
                   {totalDirectLinks} diretos
                 </span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-800 border border-blue-200">
+                  {totalVerifiedOnPage} lidos & confirmados na página
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-900 border border-amber-300">
+                  {totalWebFindings} achados web
+                </span>
+                {totalDisqualifiedEliminated > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-800 border border-rose-300">
+                    {totalDisqualifiedEliminated} inconsistentes bloqueados
+                  </span>
+                )}
+                {selectedTheme !== 'all' && (
+                  <span className="text-slate-600 bg-slate-100 px-2 py-0.5 rounded text-[11px]">
+                    Tema: {selectedTheme}
+                  </span>
+                )}
+                {selectedCountry !== 'all' && (
+                  <span className="text-slate-600 bg-slate-100 px-2 py-0.5 rounded text-[11px]">
+                    País: {selectedCountry}
+                  </span>
+                )}
+                {selectedModality !== 'all' && (
+                  <span className="text-slate-600 bg-slate-100 px-2 py-0.5 rounded text-[11px]">
+                    Nível: {selectedModality}
+                  </span>
+                )}
+                {selectedCareerLevel !== 'all' && (
+                  <span className="text-slate-600 bg-slate-100 px-2 py-0.5 rounded text-[11px]">
+                    Carreira: {selectedCareerLevel}
+                  </span>
+                )}
               </div>
+
               <div className="flex items-center space-x-2 text-[11px]">
                 <span className="flex items-center gap-1 text-slate-600 font-mono">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -236,46 +234,94 @@ export default function App() {
               </div>
             </div>
 
+            {/* List of Scholarships */}
             {loading ? (
               <div className="bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-500">
                 <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-3 text-slate-700" />
                 <h4 className="font-serif text-base font-bold text-slate-800">
-                  Consultando base do Supabase...
+                  Consultando base de editais...
                 </h4>
+                <p className="text-xs text-slate-400 mt-1 font-sans">
+                  Auditando prazos limites e confirmando status de vigência.
+                </p>
               </div>
             ) : scholarships.length === 0 ? (
               <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
                 <Info className="w-8 h-8 text-amber-700 mx-auto mb-3" />
                 <h3 className="font-serif text-lg font-bold text-slate-900">
-                  Nenhum edital ativo corresponde aos critérios
+                  Nenhum edital ativo corresponde aos critérios selecionados
                 </h3>
+                <p className="text-xs text-slate-500 mt-1.5 max-w-md mx-auto leading-relaxed font-sans">
+                  Não foram encontradas oportunidades com inscrições abertas para esta combinação de filtros. Lembre-se que editais com prazos vencidos são automaticamente removidos da consulta pública.
+                </p>
+                <div className="mt-5 flex items-center justify-center gap-2 text-xs">
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSelectedTheme('all');
+                      setSelectedCountry('all');
+                      setSelectedModality('all');
+                    }}
+                    className="px-4 py-2 bg-[#0F172A] hover:bg-slate-800 text-white rounded-md font-semibold transition-colors cursor-pointer"
+                  >
+                    Ver Todos os Editais Ativos
+                  </button>
+                  <button
+                    onClick={() => setIncludeExpired(true)}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md font-medium transition-colors cursor-pointer"
+                  >
+                    Ativar Modo Auditoria (Exibir Vencidos)
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="space-y-3.5">
-                {scholarships.map((scholarship, index) => (
-                  <ScholarshipCard key={(scholarship as any).id || index} scholarship={scholarship} />
+                {scholarships.map((scholarship) => (
+                  <ScholarshipCard key={scholarship.id} scholarship={scholarship} />
                 ))}
               </div>
             )}
           </div>
         )}
 
-        {activeTab === 'ai-scout' && <AIScoutPanel />}
-        {activeTab === 'web-search' && <WebSearchScoutPanel onImportSuccess={() => loadScholarships()} />}
-        {activeTab === 'subscribe' && <EmailSubscriptionPanel />}
+        {/* TAB 2: AI AGENT SCOUT */}
+        {activeTab === 'ai-scout' && (
+          <AIScoutPanel />
+        )}
+
+        {/* TAB 3: INSTITUTIONAL NAVIGATOR (REAL LINKS & LIVE PORTAL AUDIT) */}
+        {activeTab === 'web-search' && (
+          <WebSearchScoutPanel onImportSuccess={() => loadScholarships()} />
+        )}
+
+        {/* TAB 4: EMAIL SUBSCRIPTION */}
+        {activeTab === 'subscribe' && (
+          <EmailSubscriptionPanel />
+        )}
       </main>
 
+      {/* Sync Daily Modal */}
       <SyncDailyModal
         isOpen={isSyncModalOpen}
         onClose={() => setIsSyncModalOpen(false)}
         onSyncCompleted={() => loadScholarships()}
       />
 
+      {/* Academic Institutional Footer */}
       <footer className="mt-16 border-t border-slate-200 bg-white py-8 text-xs text-slate-500 font-sans">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center space-x-2">
             <span className="font-serif font-bold text-slate-900 text-sm">Cadê Bolsa</span>
             <span className="font-mono text-slate-400">· www.cadebolsa.com.br</span>
+            <span>— Acervo Unificado de Fomento Acadêmico e Pesquisa</span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4 text-slate-600 text-[11px]">
+            <span>Brasil (FAPESP, CNPq, CAPES, PROEX)</span>
+            <span>·</span>
+            <span>Europa (DAAD, FCT, EURAXESS, Horizon)</span>
+            <span>·</span>
+            <span>EUA & Canadá (Fulbright, Mitacs)</span>
           </div>
         </div>
       </footer>

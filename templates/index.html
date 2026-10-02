@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadê Bolsa? — Oportunidades de financiamento acadêmico</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <header class="topo">
+    <div class="container">
+      <h1>🎓 Cadê Bolsa?</h1>
+      <p class="subtitulo">Bolsas e editais de IC, mestrado, doutorado, pós-doutorado e projetos de pesquisa/extensão — Brasil, Europa, EUA e mundo.</p>
+      {% if atualizado_em %}
+        <p class="atualizado">Última atualização: {{ atualizado_em[:16].replace("T", " às ") }}</p>
+      {% endif %}
+    </div>
+  </header>
+
+  <form class="filtros" method="get">
+    <div class="container filtros-linha">
+      <input type="text" name="q" placeholder="Buscar por título, instituição, país ou área..." value="{{ filtro_busca }}">
+
+      <select name="nivel">
+        <option value="">Todos os níveis</option>
+        {% for n in niveis_disponiveis %}
+          <option value="{{ n }}" {% if n == filtro_nivel %}selected{% endif %}>{{ n|capitalize }}</option>
+        {% endfor %}
+      </select>
+
+      <input type="text" name="area" placeholder="Área (ex: marketing)" value="{{ filtro_area }}">
+
+      <button type="submit">Filtrar</button>
+      <a href="/" class="limpar">Limpar filtros</a>
+    </div>
+  </form>
+
+  <main class="container">
+    <p class="contagem">{{ total }} oportunidade(s) com inscrições ainda abertas</p>
+
+    {% if itens|length == 0 %}
+      <div class="vazio">
+        <p>Nenhuma oportunidade encontrada com esses filtros no momento.</p>
+        <p>Novas oportunidades são adicionadas periodicamente — volte em breve.</p>
+      </div>
+    {% endif %}
+
+    <div class="grade">
+      {% for op in itens %}
+        <article class="card {{ op._urgencia }}">
+          <div class="card-topo">
+            <span class="badge nivel">{{ op.nivel|capitalize }}</span>
+            <span class="badge area">{{ op.area }}</span>
+          </div>
+
+          <h2 class="titulo">{{ op.titulo }}</h2>
+          <p class="instituicao">{{ op.instituicao }} — {{ op.pais }}</p>
+
+          <p class="resumo">{{ op.resumo }}</p>
+
+          <div class="prazo-box">
+            {% if op._dias_restantes is not none %}
+              <span class="prazo-label">Prazo final:</span>
+              <span class="prazo-data">{{ op.prazo }}</span>
+              {% if op._dias_restantes <= 7 %}
+                <span class="prazo-tag urgente">encerra em {{ op._dias_restantes }} dia(s)!</span>
+              {% elif op._dias_restantes <= 30 %}
+                <span class="prazo-tag atencao">encerra em {{ op._dias_restantes }} dias</span>
+              {% else %}
+                <span class="prazo-tag tranquilo">encerra em {{ op._dias_restantes }} dias</span>
+              {% endif %}
+            {% else %}
+              <span class="prazo-label">Prazo:</span>
+              <span class="prazo-tag desconhecido">a confirmar no edital</span>
+            {% endif %}
+          </div>
+
+          {% if op.valor_bolsa and op.valor_bolsa != "não identificado" %}
+            <p class="valor">💰 {{ op.valor_bolsa }}</p>
+          {% endif %}
+
+          <a class="botao-acessar" href="{{ op.link }}" target="_blank" rel="noopener noreferrer">
+            Acessar oportunidade →
+          </a>
+        </article>
+      {% endfor %}
+    </div>
+  </main>
+
+  <footer class="rodape">
+    <div class="container">
+      <p>Cadê Bolsa? — os links levam diretamente à página oficial de cada oportunidade. Sempre confirme o prazo no site de origem antes de se candidatar.</p>
+    </div>
+  </footer>
+
+</body>
+</html>

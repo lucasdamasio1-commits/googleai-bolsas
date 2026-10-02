@@ -1,0 +1,10 @@
+[Unit]
+Description=Cadê Bolsa? - execução do coletor de oportunidades (agente_bolsas.py)
+
+[Service]
+Type=oneshot
+User=cadebolsa
+Group=cadebolsa
+WorkingDirectory=/var/www/cadebolsa
+EnvironmentFile=/var/www/cadebolsa/.env
+ExecStart=/var/www/cadebolsa/venv/bin/python /var/www/cadebolsa/agente_bolsas.py

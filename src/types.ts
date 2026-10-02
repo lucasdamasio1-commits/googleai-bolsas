@@ -16,6 +16,8 @@ export type MainTheme =
   | 'Tecnologia e Inovação'
   | 'Economia e Finanças'
   | 'Sustentabilidade e ESG'
+  | 'Ciências da Saúde'
+  | 'Ciências Exatas e da Terra'
   | 'Multidisciplinar';
 
 export type Region = 'Brasil' | 'Europa' | 'América do Norte' | 'Global / Outros';
@@ -70,6 +72,9 @@ export interface Scholarship {
   expectedPageTerms?: string[]; // Terms that must be present in the live page text
   fapespProcessNumber?: string;
   pageVerification?: PageVerification;
+  editalPdfUrl?: string;
+  destinationActionLinks?: Array<{ text: string; url: string }>;
+  linkRefined?: boolean;
 }
 
 export interface AIScoutRecommendation {

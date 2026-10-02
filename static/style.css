@@ -1,0 +1,156 @@
+:root {
+  --azul: #1d3557;
+  --azul-claro: #457b9d;
+  --verde: #2a9d8f;
+  --amarelo: #e9c46a;
+  --vermelho: #e76f51;
+  --cinza: #6c757d;
+  --fundo: #f7f7fb;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--fundo);
+  color: #222;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.topo {
+  background: linear-gradient(135deg, var(--azul), var(--azul-claro));
+  color: white;
+  padding: 32px 0 24px;
+}
+.topo h1 { margin: 0 0 6px; font-size: 1.9rem; }
+.subtitulo { margin: 0 0 8px; opacity: 0.95; }
+.atualizado { font-size: 0.85rem; opacity: 0.8; margin: 0; }
+
+.filtros {
+  background: white;
+  border-bottom: 1px solid #e2e2e2;
+  padding: 14px 0;
+}
+.filtros-linha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.filtros input, .filtros select {
+  padding: 9px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+.filtros input[name="q"] { flex: 1; min-width: 220px; }
+.filtros button {
+  background: var(--azul);
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+.filtros button:hover { background: var(--azul-claro); }
+.filtros .limpar {
+  color: var(--cinza);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+main { padding: 24px 0 60px; }
+.contagem { color: var(--cinza); margin-bottom: 16px; }
+
+.vazio {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--cinza);
+}
+
+.grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+.card {
+  background: white;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  border-top: 4px solid var(--cinza);
+  display: flex;
+  flex-direction: column;
+}
+.card.prazo-urgente { border-top-color: var(--vermelho); }
+.card.prazo-atencao { border-top-color: var(--amarelo); }
+.card.prazo-tranquilo { border-top-color: var(--verde); }
+.card.prazo-desconhecido { border-top-color: var(--cinza); }
+
+.card-topo { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.badge {
+  font-size: 0.72rem;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.badge.nivel { background: #e8eefc; color: var(--azul); }
+.badge.area { background: #e6f4f1; color: var(--verde); }
+
+.titulo { font-size: 1.08rem; margin: 0 0 4px; color: #1a1a1a; }
+.instituicao { font-size: 0.88rem; color: var(--cinza); margin: 0 0 10px; }
+.resumo { font-size: 0.92rem; line-height: 1.4; margin: 0 0 14px; flex-grow: 1; }
+
+.prazo-box {
+  background: #f4f5f9;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  font-size: 0.85rem;
+}
+.prazo-label { color: var(--cinza); margin-right: 6px; }
+.prazo-data { font-weight: 600; }
+.prazo-tag {
+  display: block;
+  margin-top: 4px;
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+.prazo-tag.urgente { color: var(--vermelho); }
+.prazo-tag.atencao { color: #b8860b; }
+.prazo-tag.tranquilo { color: var(--verde); }
+.prazo-tag.desconhecido { color: var(--cinza); }
+
+.valor { font-size: 0.88rem; margin: 0 0 12px; }
+
+.botao-acessar {
+  display: inline-block;
+  text-align: center;
+  background: var(--azul);
+  color: white;
+  text-decoration: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  transition: background 0.15s;
+}
+.botao-acessar:hover { background: var(--azul-claro); }
+
+.rodape {
+  background: var(--azul);
+  color: white;
+  padding: 18px 0;
+  font-size: 0.82rem;
+  text-align: center;
+  opacity: 0.9;
+}

@@ -103,6 +103,14 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
                   </span>
                 )}
 
+                {/* 1b. Deep Link Refined Badge (1 clique / sem intermediários) */}
+                {scholarship.linkRefined && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-900 border border-indigo-200 shadow-2xs" title="Este link foi refinado para direcionar diretamente ao edital final em 1 clique, sem intermediários.">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                    <span>Link Refinado (1 Clique Sem Intermediários)</span>
+                  </span>
+                )}
+
                 {/* 2. Live Page Verification Status Pill */}
                 {verification?.status === 'verified_on_page' && (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-800 border border-blue-200">
@@ -348,6 +356,20 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
                     <span>Guia de Inscrição & Busca</span>
                   </button>
 
+                  {/* Edital em PDF direto (se disponível) */}
+                  {scholarship.editalPdfUrl && (
+                    <a
+                      href={scholarship.editalPdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-900 text-xs font-semibold rounded-lg border border-slate-300 transition-colors cursor-pointer min-h-[40px]"
+                      title="Download direto do Edital Oficial em PDF"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-slate-700" />
+                      <span>Edital Oficial (PDF)</span>
+                    </a>
+                  )}
+
                   {/* Primary: Direct to Verified Portal or Internet Finding Page */}
                   <a
                     href={scholarship.link}
@@ -500,6 +522,30 @@ export const ScholarshipCard: React.FC<ScholarshipCardProps> = ({
                   <p className="text-slate-600 leading-relaxed">
                     {scholarship.requirements}
                   </p>
+                </div>
+              )}
+
+              {/* Box 4: Links Oficiais Refinados Diretos */}
+              {scholarship.destinationActionLinks && scholarship.destinationActionLinks.length > 0 && (
+                <div className="border border-indigo-200 rounded-lg p-3 bg-indigo-50/50 space-y-2">
+                  <div className="text-[11px] text-indigo-900 font-bold uppercase flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Links Oficiais Refinados (Destino Direto em 1 Clique)</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {scholarship.destinationActionLinks.map((al, idx) => (
+                      <a
+                        key={idx}
+                        href={al.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between p-2 rounded bg-white hover:bg-indigo-100/60 border border-indigo-100 text-slate-800 hover:text-indigo-950 transition-colors text-xs"
+                      >
+                        <span className="font-medium">{al.text}</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                      </a>
+                    ))}
+                  </div>
                 </div>
               )}
 

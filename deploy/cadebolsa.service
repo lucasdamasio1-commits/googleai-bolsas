@@ -1,0 +1,21 @@
+[Unit]
+Description=Cadê Bolsa? - aplicação web (Gunicorn)
+After=network.target
+
+[Service]
+# ajuste o usuário/grupo conforme o usuário criado no servidor
+User=cadebolsa
+Group=cadebolsa
+WorkingDirectory=/var/www/cadebolsa
+EnvironmentFile=/var/www/cadebolsa/.env
+ExecStart=/var/www/cadebolsa/venv/bin/gunicorn \
+    --workers 2 \
+    --bind 127.0.0.1:8000 \
+    --access-logfile /var/log/cadebolsa/access.log \
+    --error-logfile /var/log/cadebolsa/error.log \
+    app:app
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

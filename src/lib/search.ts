@@ -145,6 +145,7 @@ export async function searchWebScout(payload: {
   theme?: string;
   customKeywords?: string;
   portalId?: string;
+  customUrl?: string;
   onlyActive?: boolean;
 }): Promise<any> {
   const res = await fetch('/api/institutional-crawler/crawl', {

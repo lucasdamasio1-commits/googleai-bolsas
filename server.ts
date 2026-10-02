@@ -6,12 +6,25 @@ import { INITIAL_SCHOLARSHIPS } from './src/data/scholarshipsDatabase';
 import { Scholarship, EmailSubscription, PageVerification } from './src/types';
 import { CURRENT_REFERENCE_DATE, isScholarshipExpired } from './src/lib/dateUtils';
 import { runInstitutionalCrawler } from './src/lib/institutionalCrawler';
+import { refineOpportunityUrl } from './src/lib/linkRefiner';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// In-memory active database of scholarships
-let scholarshipsStore: Scholarship[] = [...INITIAL_SCHOLARSHIPS];
+// In-memory active database of scholarships with automatic link refinement
+let scholarshipsStore: Scholarship[] = INITIAL_SCHOLARSHIPS.map((s) => {
+  const refined = refineOpportunityUrl(s.link, { title: s.title, provider: s.provider });
+  if (refined.isRefined) {
+    return {
+      ...s,
+      link: refined.refinedUrl,
+      editalPdfUrl: s.editalPdfUrl || refined.editalPdfUrl,
+      destinationActionLinks: s.destinationActionLinks || refined.destinationActionLinks,
+      linkRefined: true,
+    };
+  }
+  return s;
+});
 let lastDailySyncDate: string = new Date().toISOString();
 const subscriptionsStore: EmailSubscription[] = [];
 const sentEmailsLog: Array<{
@@ -30,6 +43,15 @@ const sentEmailsLog: Array<{
 const pageVerificationCache = new Map<string, PageVerification>();
 
 async function verifyScholarshipOnLiveWeb(s: Scholarship, forceFresh = false): Promise<PageVerification> {
+  // Automatic link refinement: ensure we are validating the deep target, not an intermediate hub!
+  const refined = refineOpportunityUrl(s.link, { title: s.title, provider: s.provider });
+  if (refined.isRefined && refined.refinedUrl !== s.link) {
+    s.link = refined.refinedUrl;
+    s.editalPdfUrl = s.editalPdfUrl || refined.editalPdfUrl;
+    s.destinationActionLinks = s.destinationActionLinks || refined.destinationActionLinks;
+    s.linkRefined = true;
+  }
+
   const cached = pageVerificationCache.get(s.id);
   // Cache for 10 minutes unless forced
   if (!forceFresh && cached && Date.now() - new Date(cached.lastCheckedAt).getTime() < 10 * 60 * 1000) {
@@ -683,10 +705,11 @@ ${JSON.stringify(activeCatalog.map(s => {
   // 5b. POST /api/institutional-crawler/crawl and /api/web-scout/search
   const handleInstitutionalCrawl = async (req: express.Request, res: express.Response) => {
     try {
-      const { portalId, region, careerLevel, theme, customKeywords, onlyActive } = req.body;
+      const { portalId, customUrl, region, careerLevel, theme, customKeywords, onlyActive } = req.body;
 
       const result = await runInstitutionalCrawler({
         portalId: portalId || 'all',
+        customUrl: customUrl || undefined,
         region: region || 'Todas',
         careerLevel: careerLevel || 'Todas',
         theme: theme || 'Todas',
@@ -715,7 +738,10 @@ ${JSON.stringify(activeCatalog.map(s => {
 
     let addedCount = 0;
     for (const op of opportunities) {
-      const targetLink = op.finalUrl || op.specificLink;
+      const rawLink = op.finalUrl || op.specificLink;
+      const refined = refineOpportunityUrl(rawLink, { title: op.title, provider: op.provider });
+      const targetLink = refined.isRefined ? refined.refinedUrl : rawLink;
+
       if (!scholarshipsStore.some((s) => s.id === op.id || s.link === targetLink)) {
         const newScholarship: Scholarship = {
           id: op.id || `inst-import-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -734,6 +760,9 @@ ${JSON.stringify(activeCatalog.map(s => {
           verifiedToday: true,
           linkClassification: 'edital_direto',
           sourceVerificationNote: op.evidenceQuote || `Navegação oficial auditada em ${op.portalOrigin || 'portal institucional'}. Botão clicado: ${op.clickedButtonText || 'Edital'}. Destino final confirmado.`,
+          editalPdfUrl: op.editalPdfUrl || refined.editalPdfUrl,
+          destinationActionLinks: op.destinationActionLinks || refined.destinationActionLinks,
+          linkRefined: true,
         };
         scholarshipsStore.unshift(newScholarship);
         addedCount++;
